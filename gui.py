@@ -31,7 +31,13 @@ class Application:
 
     def setup_connection(self):
         with self.connection_window:
-            dpg.add_text("here b something soon")
+            dpg.add_text("Serial ports:")
+            dpg.add_same_line()
+            dpg.add_button(label="Refresh")
+            dpg.add_combo(items=("Port1", "Port2", "Port3"), id="CONNECT_PORT")
+            dpg.add_button(label="Connect")
+            dpg.add_same_line()
+            dpg.add_button(label="Disconnect")
 
     def setup_status(self):
         with self.status_window:
@@ -75,6 +81,9 @@ class Application:
         self.setup_control()
 
     def run_app(self):
+        #with dpg.font_registry():
+        #    dpg.add_font("JetBrainsMono-Regular.ttf", 15, default_font=True)
+
         self.setup_windows()
         dpg.setup_dearpygui(viewport=self.vp)
         dpg.show_viewport(self.vp)
