@@ -2,7 +2,6 @@ from functools import partial
 import dearpygui.dearpygui as dpg
 
 def test_func(sender, app_data):
-    print("Enter pressed")
     temp = dpg.get_value("CONSOLE_OUT")
     temp += "\n"
     temp += str(app_data)
@@ -19,8 +18,35 @@ class Application:
         self.control_window = window_base(label="Control", width=240, height=180, pos=(480, 380))
 
     def setup_automated(self):
+        base_input_float = partial(dpg.add_input_float, default_value=0, step=1, step_fast=True)
         with self.automated_window:
-            dpg.add_text("here b something soon")
+            with dpg.group(horizontal=True):
+                with dpg.group():
+                    dpg.add_text("Axis:")
+                    dpg.add_text("X")
+                    dpg.add_text("Y")
+                    dpg.add_text("Z")
+                with dpg.group(width=160):
+                    dpg.add_text("Start position:")
+                    base_input_float(min_value=-10000, max_value=10000)
+                    base_input_float(min_value=-10000, max_value=10000)
+                    base_input_float(min_value=-10000, max_value=10000)
+                    dpg.add_button(label="Set current position")
+                with dpg.group(width=160):
+                    dpg.add_text("Step size (mm):")
+                    base_input_float(min_value=0, max_value=10000)
+                    base_input_float(min_value=0, max_value=10000)
+                    base_input_float(min_value=0, max_value=10000)
+                with dpg.group(width=160):
+                    dpg.add_text("Number of steps:")
+                    dpg.add_input_int(default_value=0, step=1, step_fast=True, min_value=0, max_value=10000)
+                    dpg.add_input_int(default_value=0, step=1, step_fast=True, min_value=0, max_value=10000)
+                    dpg.add_input_int(default_value=0, step=1, step_fast=True, min_value=0, max_value=10000)
+                with dpg.group(width=160):
+                    dpg.add_text("Final position:")
+                    dpg.add_text("0")
+                    dpg.add_text("0")
+                    dpg.add_text("0")
 
     def setup_console(self):
         with self.console_window:
@@ -58,8 +84,8 @@ class Application:
             dpg.add_text("0", id="STATUS_ACK_ID")
 
     def setup_control(self):
+        base_input_float = partial(dpg.add_input_float, default_value=0, step=1, step_fast=True, min_value=-10000, max_value=10000)
         with self.control_window:
-            base_input_float = partial(dpg.add_input_float, default_value=0, step=1, step_fast=True, min_value=-10000, max_value=10000)
             dpg.add_text("X:")
             dpg.add_same_line()
             base_input_float(id="CONTROL_X")
