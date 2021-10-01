@@ -3,9 +3,10 @@ import dearpygui.dearpygui as dpg
 
 def test_func(sender, app_data):
     temp = dpg.get_value("CONSOLE_OUT")
+    temp += str(dpg.get_value("CONSOLE_IN"))
     temp += "\n"
-    temp += str(app_data)
     dpg.set_value("CONSOLE_OUT", temp)
+    dpg.set_value("CONSOLE_IN", "")
 
 class Application:
     def __init__(self):
@@ -47,13 +48,27 @@ class Application:
                     dpg.add_text("0")
                     dpg.add_text("0")
                     dpg.add_text("0")
+            with dpg.group(horizontal=True):
+                with dpg.file_dialog(label="Select file", show=False, callback=lambda s, a, u : print(s, a, u)):
+                    dpg.add_file_extension(".csv", color=(255, 255, 255, 255))
+                dpg.add_button(label="Select save location", user_data=dpg.last_container(), callback=lambda s, a, u: dpg.configure_item(u, show=True))
+                dpg.add_text("Current location:")
+                dpg.add_text("../..")
+            with dpg.group(horizontal=True):
+                dpg.add_button(label="Start measuring")
+                dpg.add_button(label="Stop measuring")
+            with dpg.group(horizontal=True):
+                dpg.add_text("Progress:")
+                dpg.add_text("0/0")
 
     def setup_console(self):
         with self.console_window:
             dpg.add_input_text(id="CONSOLE_OUT", width=460, height=480, multiline=True, readonly=True)
             dpg.add_text("Input:")
             dpg.add_same_line()
-            dpg.add_input_text(id="CONSOLE_IN", width=410, on_enter=True, callback=test_func)
+            dpg.add_input_text(id="CONSOLE_IN", width=360, on_enter=True, callback=test_func)
+            dpg.add_same_line()
+            dpg.add_button(label="Send", width=40, callback=test_func)
 
     def setup_connection(self):
         with self.connection_window:
