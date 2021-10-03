@@ -25,6 +25,11 @@ class Application:
         dpg.configure_item("ERROR_WINDOW", show=True)
 
 
+    def __log_sent(self, text):
+        temp = dpg.get_value("CONSOLE_OUT")
+        temp += ">>> " + text + "\n"
+        dpg.set_value("CONSOLE_OUT", temp)
+
     def __log_info(self, text):
         temp = dpg.get_value("CONSOLE_OUT")
         temp += "[i] " + text + "\n"
@@ -46,8 +51,7 @@ class Application:
         in_txt = dpg.get_value("CONSOLE_IN")
         if (in_txt == ""):
             return
-        temp += ">>> " + in_txt
-        temp += "\n"
+        self.__log_sent(in_txt)
         dpg.set_value("CONSOLE_OUT", temp)
         dpg.set_value("CONSOLE_IN", "")
 
@@ -74,7 +78,7 @@ class Application:
 
 
     def __start_measuring(self):
-        print("AUTOMATED MEASURING NOT IMPLEMENTED")
+        self.__show_error("AUTOMATED MEASURING NOT IMPLEMENTED")
 
 
     def __update_ports(self):
