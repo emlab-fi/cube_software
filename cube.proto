@@ -1,0 +1,93 @@
+syntax = "proto3";
+
+enum instruction {
+    nop = 0;
+    status_i = 1;
+    move_to = 2;
+    get_abs_pos = 3;
+    get_rel_pos = 4;
+    set_zero_pos = 5;
+    reset_zero_pos = 6;
+    set_coordinate_mode = 7;
+    home = 8;
+    spi_transfer = 9;
+    i2c_transfer = 10;
+    set_gpio_mode = 11;
+    set_gpio = 12;
+    get_gpio = 13;
+    set_parameter = 14;
+    get_parameter = 15;
+}
+
+enum coord_mode {
+    cartesian = 0;
+    cylindrical = 1;
+    spherical = 2;
+}
+
+// we use a, b, c as the position can be both cartesian
+// or spherical/cylindrical
+message position {
+    float a = 1;
+    float b = 2;
+    float c = 3;
+}
+
+message spi_transfer_submsg {
+    uint32 cs = 1;
+    uint32 length = 2;
+    bytes data = 3;
+}
+
+message i2c_transfer_submsg {
+    uint32 rx_length = 1;
+    uint32 tx_length = 2;
+    uint32 address = 3;
+    bytes data = 4;
+}
+
+message data_reply_submsg {
+    uint32 length = 1;
+    bytes data = 2;
+}
+
+message gpio_config_submsg {
+    uint32 index = 1;
+    bool value = 2;
+}
+
+message param_config_submsg {
+    uint32 id = 1;
+    uint32 value = 2;
+}
+
+//main message types
+message command_msg {
+    uint32 id = 1;
+    instruction inst = 2;
+    oneof payload {
+        position pos = 3;
+        coord_mode mode = 4;
+        spi_transfer_submsg spi = 5;
+        i2c_transfer_submsg i2c = 6;
+        gpio_config_submsg gpio = 7;
+        param_config_submsg param = 8;
+    }
+}
+
+message reply_msg {
+    uint32 id = 1;
+    status_msg stat = 2;
+    oneof payload {
+        data_reply_submsg data = 3;
+        bool gpio_status = 4;
+        uint32 param_value = 5;
+    }
+}
+
+message status_msg {
+    uint32 error_id = 1;
+    coord_mode mode = 2;
+    position pos = 3;
+    // more stuff to follow
+}
