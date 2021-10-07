@@ -70,6 +70,7 @@ class Application:
         dpg.set_value("AUTO_START_X", dpg.get_value("CONTROL_X"))
         dpg.set_value("AUTO_START_Y", dpg.get_value("CONTROL_Y"))
         dpg.set_value("AUTO_START_Z", dpg.get_value("CONTROL_Z"))
+        self.__update_final_pos()
 
 
     def __update_save_location(self, s, a, u):
