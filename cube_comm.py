@@ -15,11 +15,11 @@ class Reply:
 class CubeComm:
     def __init__(self, id_start):
         self.__port = None
-        self.__id = id_start
+        self.id = id_start
     
     def __get_id(self):
-        self.__id += 1
-        return self.__id
+        self.id += 1
+        return self.id
 
     def __send_data(self, msg_type, data):
         msg_out = [0x55, 0x55, 0x55, msg_type, len(data)]

@@ -2,11 +2,12 @@ from functools import partial
 import dearpygui.dearpygui as dpg
 import serial.tools.list_ports as ports
 import serial
+from cube_comm import CubeComm
 
 class Application:
     def __init__(self, measure_func = None, init_func = None):
         window_base = partial(dpg.window, no_close=True, no_resize=True)
-        self.__vp = dpg.create_viewport(title='Cube Control App', width=720, height=560, resizable=True, clear_color=((128, 128, 128, 255)))
+        self.__vp = dpg.create_viewport(title='Cube Control App', width=720, height=600, resizable=True, clear_color=((128, 128, 128, 255)))
         self.__automated_window = window_base(label="Automated measuring", width=720, height=280, collapsed=True, pos=(0, 0))
         self.__console_window = window_base(label="Console", width=480, height=540, pos=(0, 20))
         self.__connection_window = window_base(label="Connection", width=240, height=180, pos=(480, 20))
@@ -17,7 +18,7 @@ class Application:
         self.__measure_func = measure_func
         self.__init_func = init_func
         self.__sensor_initialized = False
-        self.__cube = None
+        self.__cube = CubeComm(111)
 
 
     def __show_error(self, error_text):
@@ -52,6 +53,7 @@ class Application:
         if (in_txt == ""):
             return
         self.__log_sent(in_txt)
+        #TODO: add interpreter
         dpg.set_value("CONSOLE_OUT", temp)
         dpg.set_value("CONSOLE_IN", "")
 
@@ -63,7 +65,19 @@ class Application:
         dpg.set_value("AUTO_FINAL_X", final_pos_x)
         dpg.set_value("AUTO_FINAL_Y", final_pos_y)
         dpg.set_value("AUTO_FINAL_Z", final_pos_z)
-        return
+    
+
+    def __update_status(self, data):
+        if data == None:
+            return
+        pos = data.position
+        dpg.set_value("STATUS_POS", str(pos))
+        dpg.set_value("STATUS_ACK_ID", data.id)
+        dpg.set_value("CONTROL_X", pos[0])
+        dpg.set_value("CONTROL_Y", pos[1])
+        dpg.set_value("CONTROL_Z", pos[2])
+        #TODO: do conversion
+        dpg.set_value("STATUS_MODE", data.mode)
 
 
     def __set_current_pos(self):
@@ -100,7 +114,14 @@ class Application:
         self.__serial_port.flush()
         dpg.set_value("STATUS_CON", "Connected " + port)
         dpg.set_value("CONSOLE_IN", "status")
-        self.__send_command()
+        self.__cube.set_serial_port(self.__serial_port)
+        has_error, error, ret = self.__cube.status()
+        self.__update_status(ret)
+        if has_error:
+            self.__log_error(f"Communication error: {error}")
+        if ret.error != 0:
+            self.__log_error(f"Iternal cube error: {error}")
+        self.__log_info("Connected to serial port")
 
 
     def __disconnect_serial(self):
@@ -110,15 +131,25 @@ class Application:
         self.__serial_port.close()
         self.__serial_port = None
         dpg.set_value("STATUS_CON", "Disconnected")
+        self.__cube.set_serial_port(self.__serial_port)
 
 
     def __goto_pos(self):
         if (self.__serial_port == None):
             self.__show_error("Not connected!")
             return
-
-        self.__log_info("Moving...")
-        self.__log_error("Not implemented")
+        a = dpg.get_value("CONTROL_X")
+        b = dpg.get_value("CONTROL_Y")
+        c = dpg.get_value("CONTROL_Z")
+        has_error, error, ret = self.__cube.move_to(float(a), float(b), float(c))
+        self.__update_status(ret)
+        if has_error:
+            self.__log_error(f"Communication error: {error}")
+            return
+        if ret.error != 0:
+            self.__log_error(f"Internal cube error: {ret.error}")
+            return
+        self.__log_info(f"Moved to: {a}, {b}, {c}")
 
 
     def __measure(self):
@@ -146,9 +177,16 @@ class Application:
             self.__show_error("Not connected!")
             return
 
-        self.__log_info("Homing...")
-        self.__log_error("Not implemented")
-        return
+        self.__log_info("Starting homing")
+        has_error, error, ret = self.__cube.home()
+        self.__update_status(ret)
+        if has_error:
+            self.__log_error(f"Communication error: {error}")
+            return
+        if ret.error != 0:
+            self.__log_error(f"Iternal cube error: {error}")
+            return
+        self.__log_info("Homed to {0, 0, 0}")
 
 
     def __setup_automated(self):
@@ -227,9 +265,6 @@ class Application:
             dpg.add_text("Mode:")
             dpg.add_same_line()
             dpg.add_text("Cartesian", id="STATUS_MODE")
-            dpg.add_text("Last sent ID:")
-            dpg.add_same_line()
-            dpg.add_text("0", id="STATUS_SENT_ID")
             dpg.add_text("Last ack ID:")
             dpg.add_same_line()
             dpg.add_text("0", id="STATUS_ACK_ID")
