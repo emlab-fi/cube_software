@@ -68,7 +68,7 @@ class CubeComm:
 
     
     def __decode_receive(self, received):
-        has_error, error, packet = self.__readPacket(received)
+        has_error, error, packet = self.__read_packet(received)
         if has_error:
             return (True, error, None)
         msg = cube_pb2.reply_msg().FromString(bytearray(packet))
@@ -87,7 +87,7 @@ class CubeComm:
     def __send_simple_command(self, command):
         msg = cube_pb2.command_msg()
         msg.id = self.__get_id()
-        msg.command = command
+        msg.inst = command
 
         data = msg.SerializeToString()
         self.__send_data(0x01, data)
@@ -125,7 +125,7 @@ class CubeComm:
     def move_to(self, a, b, c):
         msg = cube_pb2.command_msg()
         msg.id = self.__get_id()
-        msg.command = cube_pb2.move_to
+        msg.inst = cube_pb2.move_to
         msg.pos.a = a
         msg.pos.b = b
         msg.pos.c = c
@@ -135,7 +135,7 @@ class CubeComm:
     def set_coordinate_mode(self, mode):
         msg = cube_pb2.command_msg()
         msg.id = self.__get_id()
-        msg.command = cube_pb2.set_coordinate_mode
+        msg.inst = cube_pb2.set_coordinate_mode
         if (mode == 0):
             msg.mode = cube_pb2.cartesian
         if (mode == 1):
@@ -147,26 +147,26 @@ class CubeComm:
     def spi_transfer(self, cs, mode, length, data):
         msg = cube_pb2.command_msg()
         msg.id = self.__get_id()
-        msg.command = cube_pb2.spi_transfer
+        msg.inst = cube_pb2.spi_transfer
         msg.spi.cs = cs
         msg.spi.length = length
-        msg.spi.data = data + ([0] * (64 - length))
+        msg.spi.data = bytes(data + ([0] * (64 - length)))
         return self.__send_msg(msg)
     
     def i2c_transfer(self, rx_len, tx_len, addr, data):
         msg = cube_pb2.command_msg()
         msg.id = self.__get_id()
-        msg.command = cube_pb2.i2c_transfer
+        msg.inst = cube_pb2.i2c_transfer
         msg.i2c.rx_length = rx_len
         msg.i2c.tx_length = tx_len
         msg.i2c.address = addr
-        msg.i2c.data = data + ([0] * (64 - rx_len))
+        msg.i2c.data = bytes(data + ([0] * (64 - rx_len)))
         return self.__send_msg(msg)
     
     def set_gpio_mode(self, index, mode):
         msg = cube_pb2.command_msg()
         msg.id = self.__get_id()
-        msg.command = cube_pb2.set_gpio_mode
+        msg.inst = cube_pb2.set_gpio_mode
         msg.gpio.index = index
         msg.gpio.value = mode
         return self.__send_msg(msg)
@@ -174,7 +174,7 @@ class CubeComm:
     def set_gpio(self, index, value):
         msg = cube_pb2.command_msg()
         msg.id = self.__get_id()
-        msg.command = cube_pb2.set_gpio
+        msg.inst = cube_pb2.set_gpio
         msg.gpio.index = index
         msg.gpio.value = value
         return self.__send_msg(msg)
@@ -182,7 +182,7 @@ class CubeComm:
     def get_gpio(self, index):
         msg = cube_pb2.command_msg()
         msg.id = self.__get_id()
-        msg.command = cube_pb2.get_gpio
+        msg.inst = cube_pb2.get_gpio
         msg.gpio.index = index
         msg.gpio.value = False
         return self.__send_msg(msg)
@@ -190,7 +190,7 @@ class CubeComm:
     def set_parameter(self, id, value):
         msg = cube_pb2.command_msg()
         msg.id = self.__get_id()
-        msg.command = cube_pb2.set_parameter
+        msg.inst = cube_pb2.set_parameter
         msg.param.id = id
         msg.param.value = value
         return self.__send_msg(msg)
@@ -198,7 +198,7 @@ class CubeComm:
     def get_parameter(self, id):
         msg = cube_pb2.command_msg()
         msg.id = self.__get_id()
-        msg.command = cube_pb2.get_parameter
+        msg.inst = cube_pb2.get_parameter
         msg.param.id = id
         msg.param.value = 0
         return self.__send_msg(msg)
