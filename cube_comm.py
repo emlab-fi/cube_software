@@ -17,7 +17,7 @@ class CubeComm:
         self.__port = None
         self.__id = id_start
     
-    def __get_id():
+    def __get_id(self):
         self.__id += 1
         return self.__id
 
@@ -32,12 +32,46 @@ class CubeComm:
             receive = self.__port.read(300)
         return receive
 
-    def __read_packet(self):
-        #implement this
-        return False
+    def __read_packet(self, data):
+        found = []
+        header_found = 0
+        data_length = 0
+        reading_data = False
+        for i in range(len(data)):
+            if not reading_data:
+                if header_found == 3:
+                    data_length = data[i]
+                    reading_data = True
+                    continue
+                if data[i] != 0x55:
+                    header_found = 0
+                    continue
+                if data[i] == 0x55:
+                    header_found += 1
+                    continue
+            if reading_data:
+                if data_length == 0:
+                    return (found, True)
+                found.append(data[i])
+                data_length -= 1
+        if (data_length == 0):
+            return (found, True)
+        return (found, False)
+
     
-    def __decode_receive(self):
-        return 0
+    def __decode_receive(self, received):
+        data, found_end = self.__readPacket(received)
+        if not found_end:
+            return (True, "Data read error", [])
+        msg = protocols_pb2.Return_msg().FromString(bytearray(data))
+        has_error, error = self.__decodeStatus(msg, command)
+        data_out = [None, None]
+        if msg.HasField('position'):
+            data_out[0] = (msg.position.x, msg.position.y, msg.position.z)
+        if msg.HasField('measurement'):
+            data_out[1] = (msg.measurement.x, msg.measurement.y, msg.measurement.z)
+        return (has_error, error, tuple(data_out))
+
     
     def __send_simple_command(self, command):
         msg = cube_pb2.command_msg()
@@ -91,11 +125,11 @@ class CubeComm:
         msg = cube_pb2.command_msg()
         msg.id = self.__get_id()
         msg.command = cube_pb2.set_coordinate_mode
-        if (mode = 0):
+        if (mode == 0):
             msg.mode = cube_pb2.cartesian
-        if (mode = 1):
+        if (mode == 1):
             msg.mode = cube_pb2.cylindrical
-        if (mode = 3):
+        if (mode == 3):
             msg.mode = cube_pb2.spherical
         return self.__send_msg(msg)
     
