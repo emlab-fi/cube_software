@@ -8,8 +8,8 @@ class Reply:
     id: int
     error: int
     mode: int
-    position: tuple(int, int, int)
-    playload: any = None
+    position: tuple
+    payload: any = None
 
 
 class CubeComm:
@@ -33,15 +33,18 @@ class CubeComm:
         return receive
 
     def __read_packet(self, data):
-        found = []
+        packet = []
         header_found = 0
-        data_length = 0
+        packet_length = 0
         reading_data = False
+        reading_data_length = False
         for i in range(len(data)):
-            if not reading_data:
+            if not (reading_data or reading_data_length):
                 if header_found == 3:
-                    data_length = data[i]
-                    reading_data = True
+                    msg_type = data[i]
+                    reading_data_length = True
+                    if (msg_type != 0x02):
+                        return (True, "cube_comm: wrong reply", None)
                     continue
                 if data[i] != 0x55:
                     header_found = 0
@@ -49,28 +52,36 @@ class CubeComm:
                 if data[i] == 0x55:
                     header_found += 1
                     continue
+            if reading_data_length:
+                packet_length = data[i]
+                reading_data = True
+                reading_data_length = False
+                continue
             if reading_data:
-                if data_length == 0:
-                    return (found, True)
-                found.append(data[i])
-                data_length -= 1
-        if (data_length == 0):
-            return (found, True)
-        return (found, False)
+                if packet_length == 0:
+                    return (True, "cube_comm: no data", None)
+                packet.append(data[i])
+                packet_length -= 1
+        if (packet_length == 0 and not len(packet) == 0):
+            return (False, None, packet)
+        return (True, "cube_comm: lost data", None)
 
     
     def __decode_receive(self, received):
-        data, found_end = self.__readPacket(received)
-        if not found_end:
-            return (True, "Data read error", [])
-        msg = protocols_pb2.Return_msg().FromString(bytearray(data))
-        has_error, error = self.__decodeStatus(msg, command)
-        data_out = [None, None]
-        if msg.HasField('position'):
-            data_out[0] = (msg.position.x, msg.position.y, msg.position.z)
-        if msg.HasField('measurement'):
-            data_out[1] = (msg.measurement.x, msg.measurement.y, msg.measurement.z)
-        return (has_error, error, tuple(data_out))
+        has_error, error, packet = self.__readPacket(received)
+        if has_error:
+            return (True, error, None)
+        msg = cube_pb2.reply_msg().FromString(bytearray(packet))
+        payload = None
+        position = (msg.stat.pos.a, msg.stat.pos.b, msg.stat.pos.c)
+        if msg.HasField('data'):
+            payload = (msg.data.length, msg.data.data)
+        elif msg.HasField('gpio_status'):
+            payload = gpio_status
+        elif msg.HasField('param_value'):
+            payload = msg.param_value
+        reply = Reply(msg.id, msg.stat.error, msg.stat.mode, position, payload)
+        return (has_error, error, reply)
 
     
     def __send_simple_command(self, command):
@@ -79,14 +90,14 @@ class CubeComm:
         msg.command = command
 
         data = msg.SerializeToString()
-        self.__send_data(data)
+        self.__send_data(0x01, data)
 
         data_in = self.__receive_data()
         return self.__decode_receive(data_in)
 
     def __send_msg(self, msg):
         data = msg.SerializeToString()
-        self.__send_data(data)
+        self.__send_data(0x01, data)
         data_in = self.__receive_data()
         return self.__decode_receive(data_in)
     
@@ -139,7 +150,7 @@ class CubeComm:
         msg.command = cube_pb2.spi_transfer
         msg.spi.cs = cs
         msg.spi.length = length
-        msg.spi.data = data
+        msg.spi.data = data + ([0] * (64 - length))
         return self.__send_msg(msg)
     
     def i2c_transfer(self, rx_len, tx_len, addr, data):
@@ -149,7 +160,7 @@ class CubeComm:
         msg.i2c.rx_length = rx_len
         msg.i2c.tx_length = tx_len
         msg.i2c.address = addr
-        msg.i2c.data = data
+        msg.i2c.data = data + ([0] * (64 - rx_len))
         return self.__send_msg(msg)
     
     def set_gpio_mode(self, index, mode):
