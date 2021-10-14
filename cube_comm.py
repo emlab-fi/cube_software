@@ -1,5 +1,5 @@
+import typing
 from dataclasses import dataclass
-import serial
 import cube_pb2
 
 
@@ -8,8 +8,19 @@ class Reply:
     id: int
     error: int
     mode: int
-    position: tuple
-    payload: any = None
+    position: typing.Tuple[float, float, float]
+    payload_gpio: typing.Optional[bool] = None
+    payload_parameter: typing.Optional[int] = None
+    payload_data: typing.Optional[typing.Tuple[int, list[int]]] = None
+
+    def get_payload(self):
+        if self.payload_gpio is not None:
+            return self.payload_gpio
+        if self.payload_parameter is not None:
+            return self.payload_parameter
+        if self.payload_data is not None:
+            return self.payload_data
+        return None
 
 
 class CubeComm:
@@ -72,15 +83,14 @@ class CubeComm:
         if has_error:
             return (True, error, None)
         msg = cube_pb2.reply_msg().FromString(bytearray(packet))
-        payload = None
         position = (msg.stat.pos.a, msg.stat.pos.b, msg.stat.pos.c)
+        reply = Reply(int(msg.id), int(msg.stat.error_id), int(msg.stat.mode), position)
         if msg.HasField('data'):
-            payload = (msg.data.length, msg.data.data)
+            reply.payload_data = (msg.data.length, msg.data.data)
         elif msg.HasField('gpio_status'):
-            payload = gpio_status
+            reply.payload_gpio = msg.gpio_status
         elif msg.HasField('param_value'):
-            payload = msg.param_value
-        reply = Reply(msg.id, msg.stat.error, msg.stat.mode, position, payload)
+            reply.payload_parameter = msg.param_value
         return (has_error, error, reply)
 
     

@@ -113,9 +113,9 @@ class Application:
             return
         self.__serial_port.flush()
         dpg.set_value("STATUS_CON", "Connected " + port)
-        dpg.set_value("CONSOLE_IN", "status")
         self.__cube.set_serial_port(self.__serial_port)
         has_error, error, ret = self.__cube.status()
+        self.__log_sent("status")
         self.__update_status(ret)
         if has_error:
             self.__log_error(f"Communication error: {error}")
