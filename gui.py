@@ -3,6 +3,7 @@ import dearpygui.dearpygui as dpg
 import serial.tools.list_ports as ports
 import serial
 from cube_comm import CubeComm
+from cube_interpret import CubeInterpret
 
 class Application:
     def __init__(self, measure_func = None, init_func = None):
@@ -19,6 +20,7 @@ class Application:
         self.__init_func = init_func
         self.__sensor_initialized = False
         self.__cube = CubeComm(111)
+        self.__interpreter = CubeInterpret(self.__cube, self.__log_info)
 
 
     def __show_error(self, error_text):
@@ -48,14 +50,23 @@ class Application:
             self.__show_error("Not connected!")
             dpg.set_value("CONSOLE_IN", "")
             return
-        temp = dpg.get_value("CONSOLE_OUT")
         in_txt = dpg.get_value("CONSOLE_IN")
         if (in_txt == ""):
             return
         self.__log_sent(in_txt)
-        #TODO: add interpreter
-        dpg.set_value("CONSOLE_OUT", temp)
         dpg.set_value("CONSOLE_IN", "")
+        has_error, error, reply = self.__interpreter.interpret_command(in_txt)
+        if has_error:
+            self.__log_error(error)
+            return
+        self.__update_status(reply)
+        if reply.error != 0:
+            self.__log_error(f"Internal cube error: {reply.error}")
+            return
+        if reply.get_payload() is not None:
+            str_rep = f"Received data: {reply.get_payload()}"
+            self.__log_info(str_rep)
+
 
 
     def __update_final_pos(self):
@@ -68,7 +79,7 @@ class Application:
     
 
     def __update_status(self, data):
-        if data == None:
+        if data is None:
             return
         pos = data.position
         dpg.set_value("STATUS_POS", str(pos))
@@ -125,7 +136,7 @@ class Application:
 
 
     def __disconnect_serial(self):
-        if (self.__serial_port == None):
+        if (self.__serial_port is None):
             self.__show_error("No port to close!")
         self.__serial_port.flush()
         self.__serial_port.close()
@@ -135,7 +146,7 @@ class Application:
 
 
     def __goto_pos(self):
-        if (self.__serial_port == None):
+        if (self.__serial_port is None):
             self.__show_error("Not connected!")
             return
         a = dpg.get_value("CONTROL_X")
@@ -153,11 +164,11 @@ class Application:
 
 
     def __measure(self):
-        if (self.__serial_port == None):
+        if (self.__serial_port is None):
             self.__show_error("Not connected!")
             return
 
-        if self.__measure_func == None or self.__init_func == None:
+        if self.__measure_func is None or self.__init_func is None:
             self.__show_error("No measure or init function!")
 
         if not self.__sensor_initialized:
@@ -173,7 +184,7 @@ class Application:
 
 
     def __home(self):
-        if (self.__serial_port == None):
+        if (self.__serial_port is None):
             self.__show_error("Not connected!")
             return
 
