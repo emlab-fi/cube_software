@@ -55,9 +55,12 @@ class Application:
             return
         self.__log_sent(in_txt)
         dpg.set_value("CONSOLE_IN", "")
+        dpg.focus_item("CONSOLE_IN")
         has_error, error, reply = self.__interpreter.interpret_command(in_txt)
         if has_error:
             self.__log_error(error)
+            return
+        if reply is None:
             return
         self.__update_status(reply)
         if reply.error != 0:
@@ -87,8 +90,12 @@ class Application:
         dpg.set_value("CONTROL_X", pos[0])
         dpg.set_value("CONTROL_Y", pos[1])
         dpg.set_value("CONTROL_Z", pos[2])
-        #TODO: do conversion
-        dpg.set_value("STATUS_MODE", data.mode)
+        if (data.mode == 0):
+            dpg.set_value("STATUS_MODE", "Cartesian")
+        if (data.mode == 1):
+            dpg.set_value("STATUS_MODE", "Cylindrical")
+        if (data.mode == 2):
+            dpg.set_value("STATUS_MODE", "Spherical")
 
 
     def __set_current_pos(self):
@@ -246,7 +253,7 @@ class Application:
 
     def __setup_console(self):
         with self.__console_window:
-            dpg.add_input_text(id="CONSOLE_OUT", width=460, height=480, multiline=True, readonly=True)
+            dpg.add_input_text(id="CONSOLE_OUT", width=460, height=480, multiline=True, readonly=True, tracked=True)
             dpg.add_text("Input:")
             dpg.add_same_line()
             dpg.add_input_text(id="CONSOLE_IN", width=360, on_enter=True, callback=self.__send_command)

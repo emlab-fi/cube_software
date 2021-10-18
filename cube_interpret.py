@@ -52,7 +52,7 @@ class CubeInterpret:
                 return self.__cube.set_coordinate_mode(0)
             elif (data == "cylindrical"):
                 return self.__cube.set_coordinate_mode(1)
-            elif (data == "polar"):
+            elif (data == "spherical"):
                 return self.__cube.set_coordinate_mode(2)
             return True, "unknown mode", None
         

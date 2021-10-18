@@ -150,7 +150,7 @@ class CubeComm:
             msg.mode = cube_pb2.cartesian
         if (mode == 1):
             msg.mode = cube_pb2.cylindrical
-        if (mode == 3):
+        if (mode == 2):
             msg.mode = cube_pb2.spherical
         return self.__send_msg(msg)
     
