@@ -194,7 +194,7 @@ class CubeComm:
         msg.id = self.__get_id()
         msg.inst = cube_pb2.get_gpio
         msg.gpio.index = index
-        msg.gpio.value = False
+        msg.gpio.value = True
         return self.__send_msg(msg)
     
     def set_parameter(self, id, value):
