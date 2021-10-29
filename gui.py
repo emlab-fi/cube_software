@@ -1,9 +1,13 @@
 from functools import partial
+from pathlib import Path
+from datetime import datetime
 import dearpygui.dearpygui as dpg
 import serial.tools.list_ports as ports
 import serial
 from cube_comm import CubeComm
 from cube_interpret import CubeInterpret
+
+TABLE_HEADER = "x_pos, y_pos, z_pos, x_val, y_val, z_val\n"
 
 class Application:
     def __init__(self, measure_func = None, init_func = None):
@@ -17,6 +21,7 @@ class Application:
         self.__error_window = dpg.window(no_close=True, no_collapse=True, label="Error", pos=(240, 240), modal=True, show=False, autosize=True, id="ERROR_WINDOW")
         self.__serial_port = None
         self.__measure_func = measure_func
+        self.__measuring = False
         self.__init_func = init_func
         self.__sensor_initialized = False
         self.__cube = CubeComm(111)
@@ -111,7 +116,70 @@ class Application:
 
 
     def __start_measuring(self):
-        self.__show_error("AUTOMATED MEASURING NOT IMPLEMENTED")
+        if (self.__serial_port is None):
+            self.__show_error("Not connected!")
+            return
+        
+        if (self.__init_func is None or self.__measure_func is None):
+            self.__show_error("No init or measure function!")
+            return
+        
+        if not self.__init_func(self.__cube):
+            self.__show_error("Sensor init failed!")
+            return
+
+
+        file_path = Path(dpg.get_value("AUTO_SAVE_FILE"))
+        save_file = open(file_path, "w")
+        date_str = datetime.now().isoformat(sep="-") + "\n"
+        save_file.writelines([date_str, TABLE_HEADER])
+
+        steps_count = dpg.get_value("AUTO_COUNT_X") * dpg.get_value("AUTO_COUNT_Y") * dpg.get_value("AUTO_COUNT_Z")
+        done = 0
+        self.__measuring = True
+
+        current_x = dpg.get_value("AUTO_START_X")
+        current_y = dpg.get_value("AUTO_START_Y")
+        current_z = dpg.get_value("AUTO_START_Z")
+
+        step_x = dpg.get_value("AUTO_STEP_X")
+        step_y = dpg.get_value("AUTO_STEP_Y")
+        step_z = dpg.get_value("AUTO_STEP_Z")
+
+        self.__cube.move_to(current_x, current_y, current_z)
+
+        for z in range(dpg.get_value("AUTO_COUNT_Z")):
+            for y in range(dpg.get_value("AUTO_COUNT_Y")):
+                for x in range(dpg.get_value("AUTO_COUNT_X")):
+                    if not self.__measuring:
+                        break
+                    has_error, error, data = self.__measure_func(self.__cube)
+                    if has_error:
+                        continue
+                    save_file.write(f"{current_x}, {current_y}, {current_z}, {data[0]}, {data[1]}, {data[2]}\n")
+                    #self.__log_info(f"{current_x}, {current_y}, {current_z}, {data[0]}, {data[1]}, {data[2]}")
+                    current_x += step_x
+                    has_error, error, data = self.__cube.move_to(current_x, current_y, current_z)
+                    done += 1
+                    dpg.set_value("AUTO_PROGRESS", f"{done}/{steps_count}")
+                if not self.__measuring:
+                    break
+                current_y += step_y
+                current_x = dpg.get_value("AUTO_START_X")
+            if not self.__measuring:
+                break
+            current_x = dpg.get_value("AUTO_START_X")
+            current_y = dpg.get_value("AUTO_START_Y")
+            current_z += step_z
+        
+        self.__measuring = False
+
+        save_file.flush()
+        save_file.close()
+    
+
+    def __stop_measuring(self):
+        self.__measuring = False
 
 
     def __update_ports(self):
@@ -177,14 +245,15 @@ class Application:
 
         if self.__measure_func is None or self.__init_func is None:
             self.__show_error("No measure or init function!")
+            return
 
         if not self.__sensor_initialized:
             if not self.__init_func(self.__cube):
                 self.__log_error("sensor init failed")
                 return
 
-        error, value = self.__measure_func(self.__cube)
-        if (error != None):
+        has_error, error, value = self.__measure_func(self.__cube)
+        if (has_error):
             self.__log_error(error)
             return
         self.__log_info(str(value))
@@ -242,10 +311,10 @@ class Application:
                     dpg.add_file_extension(".csv", color=(255, 255, 255, 255))
                 dpg.add_button(label="Select save location", user_data=dpg.last_container(), callback=lambda s, a, u: dpg.configure_item(u, show=True))
                 dpg.add_text("Current location:")
-                dpg.add_text("../..", id="AUTO_SAVE_FILE")
+                dpg.add_text("./data.csv", id="AUTO_SAVE_FILE")
             with dpg.group(horizontal=True):
                 dpg.add_button(label="Start measuring", callback=self.__start_measuring)
-                #dpg.add_button(label="Stop measuring")
+                dpg.add_button(label="Stop measuring", callback=self.__stop_measuring)
             with dpg.group(horizontal=True):
                 dpg.add_text("Progress:")
                 dpg.add_text("0/0", id="AUTO_PROGRESS")
