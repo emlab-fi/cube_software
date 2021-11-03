@@ -397,4 +397,4 @@ class CubeGUI:
 
 
 if (__name__ == "__main__"):
-    Application().run_app()
+    CubeGUI().run_app()
