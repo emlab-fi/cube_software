@@ -1,6 +1,6 @@
 import typing
 from dataclasses import dataclass
-import cube_pb2
+from pyCubeLib import cube_pb2
 
 
 @dataclass

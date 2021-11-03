@@ -4,12 +4,12 @@ from datetime import datetime
 import dearpygui.dearpygui as dpg
 import serial.tools.list_ports as ports
 import serial
-from cube_comm import CubeComm
-from cube_interpret import CubeInterpret
+from pyCubeLib.cube_comm import CubeComm
+from pyCubeLib.cube_interpret import CubeInterpret
 
 TABLE_HEADER = "x_pos, y_pos, z_pos, x_val, y_val, z_val\n"
 
-class Application:
+class CubeGUI:
     def __init__(self, measure_func = None, init_func = None):
         window_base = partial(dpg.window, no_close=True, no_resize=True)
         self.__vp = dpg.create_viewport(title='Cube Control App', width=720, height=600, resizable=True, clear_color=((128, 128, 128, 255)))

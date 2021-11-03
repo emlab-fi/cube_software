@@ -1,4 +1,4 @@
-from cube_comm import CubeComm
+from pyCubeLib.cube_comm import CubeComm
 
 class CubeInterpret:
     def __init__(self, cube, print_func):
