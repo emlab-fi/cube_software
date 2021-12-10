@@ -11,7 +11,7 @@ class Reply:
     position: typing.Tuple[float, float, float]
     payload_gpio: typing.Optional[bool] = None
     payload_parameter: typing.Optional[int] = None
-    payload_data: typing.Optional[typing.Tuple[int, list[int]]] = None
+    payload_data: typing.Optional[tuple[int, list[int]]] = None
 
     def get_payload(self):
         if self.payload_gpio is not None:
@@ -170,7 +170,7 @@ class CubeComm:
         msg.i2c.rx_length = rx_len
         msg.i2c.tx_length = tx_len
         msg.i2c.address = addr
-        msg.i2c.data = bytes(data + ([0] * (64 - rx_len)))
+        msg.i2c.data = bytes(data + ([0] * (64 - tx_len)))
         return self.__send_msg(msg)
     
     def set_gpio_mode(self, index, mode):
