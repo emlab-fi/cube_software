@@ -61,8 +61,8 @@ class CubeGUI:
         self.__log_sent(in_txt)
         dpg.set_value("CONSOLE_IN", "")
         dpg.focus_item("CONSOLE_IN")
-        has_error, error, reply = self.__interpreter.interpret_command(in_txt)
-        if has_error:
+        error, reply = self.__interpreter.interpret_command(in_txt)
+        if error:
             self.__log_error(error)
             return
         if reply is None:
@@ -84,7 +84,7 @@ class CubeGUI:
         dpg.set_value("AUTO_FINAL_X", final_pos_x)
         dpg.set_value("AUTO_FINAL_Y", final_pos_y)
         dpg.set_value("AUTO_FINAL_Z", final_pos_z)
-    
+
 
     def __update_status(self, data):
         if data is None:
@@ -119,11 +119,11 @@ class CubeGUI:
         if (self.__serial_port is None):
             self.__show_error("Not connected!")
             return
-        
+
         if (self.__init_func is None or self.__measure_func is None):
             self.__show_error("No init or measure function!")
             return
-        
+
         if not self.__init_func(self.__cube):
             self.__show_error("Sensor init failed!")
             return
@@ -153,13 +153,13 @@ class CubeGUI:
                 for x in range(dpg.get_value("AUTO_COUNT_X")):
                     if not self.__measuring:
                         break
-                    has_error, error, data = self.__measure_func(self.__cube)
-                    if has_error:
+                    error, data = self.__measure_func(self.__cube)
+                    if error:
                         continue
                     save_file.write(f"{current_x}, {current_y}, {current_z}, {data[0]}, {data[1]}, {data[2]}\n")
                     #self.__log_info(f"{current_x}, {current_y}, {current_z}, {data[0]}, {data[1]}, {data[2]}")
                     current_x += step_x
-                    has_error, error, data = self.__cube.move_to(current_x, current_y, current_z)
+                    error, data = self.__cube.move_to(current_x, current_y, current_z)
                     done += 1
                     dpg.set_value("AUTO_PROGRESS", f"{done}/{steps_count}")
                 if not self.__measuring:
@@ -171,12 +171,12 @@ class CubeGUI:
             current_x = dpg.get_value("AUTO_START_X")
             current_y = dpg.get_value("AUTO_START_Y")
             current_z += step_z
-        
+
         self.__measuring = False
 
         save_file.flush()
         save_file.close()
-    
+
 
     def __stop_measuring(self):
         self.__measuring = False
@@ -200,10 +200,10 @@ class CubeGUI:
         self.__serial_port.flush()
         dpg.set_value("STATUS_CON", "Connected " + port)
         self.__cube.set_serial_port(self.__serial_port)
-        has_error, error, ret = self.__cube.status()
+        error, ret = self.__cube.status()
         self.__log_sent("status")
         self.__update_status(ret)
-        if has_error:
+        if error:
             self.__log_error(f"Communication error: {error}")
         if ret.error != 0:
             self.__log_error(f"Iternal cube error: {error}")
@@ -227,9 +227,9 @@ class CubeGUI:
         a = dpg.get_value("CONTROL_X")
         b = dpg.get_value("CONTROL_Y")
         c = dpg.get_value("CONTROL_Z")
-        has_error, error, ret = self.__cube.move_to(float(a), float(b), float(c))
+        error, ret = self.__cube.move_to(float(a), float(b), float(c))
         self.__update_status(ret)
-        if has_error:
+        if error:
             self.__log_error(f"Communication error: {error}")
             return
         if ret.error != 0:
@@ -252,8 +252,8 @@ class CubeGUI:
                 self.__log_error("sensor init failed")
                 return
 
-        has_error, error, value = self.__measure_func(self.__cube)
-        if (has_error):
+        error, value = self.__measure_func(self.__cube)
+        if error:
             self.__log_error(error)
             return
         self.__log_info(str(value))
@@ -265,9 +265,9 @@ class CubeGUI:
             return
 
         self.__log_info("Starting homing")
-        has_error, error, ret = self.__cube.home()
+        error, ret = self.__cube.home()
         self.__update_status(ret)
-        if has_error:
+        if error:
             self.__log_error(f"Communication error: {error}")
             return
         if ret.error != 0:
