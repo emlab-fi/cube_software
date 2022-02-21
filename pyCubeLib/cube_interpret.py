@@ -4,7 +4,7 @@ class CubeInterpret:
     def __init__(self, cube, print_func):
         self.__cube = cube
         self.__print = print_func
-    
+
     def __print_help(self):
         output_str = "Available commands are:\n"\
                     "status        set_parameter get_parameter relative_pos\n"\
@@ -31,20 +31,20 @@ class CubeInterpret:
         elif cmd == "reset_zero":
             return self.__cube.reset_zero()
         elif cmd == "home":
-            return self.__cube.home()        
+            return self.__cube.home()
         elif cmd == "get_parameter":
             data = split[1]
             if len(data) == 0:
                 return True, "too few args", None
             return self.__cube.get_parameter(int(data.strip()))
-        
+
         elif cmd == "set_parameter":
             data = split[1]
             data = data.split()
             if (len(data) != 2):
                 return True, "too few args", None
             return self.__cube.set_parameter(int(data[0]), int(data[1]))
-        
+
         elif cmd == "set_coordinate_mode":
             data = split[1]
             data = data.strip()
@@ -55,20 +55,20 @@ class CubeInterpret:
             elif (data == "spherical"):
                 return self.__cube.set_coordinate_mode(2)
             return True, "unknown mode", None
-        
+
         elif cmd == "move":
             data = split[1]
             data = data.split()
             if (len(data) != 3):
                 return True, "too few args", None
             return self.__cube.move_to(float(data[0]), float(data[1]), float(data[2]))
-        
+
         elif cmd == "get_gpio":
             data = split[1]
             if len(data) == 0:
                 return True, "too few args", None
             return self.__cube.get_gpio(int(data))
-        
+
         elif cmd == "set_gpio":
             data = split[1]
             data = data.split()
@@ -82,7 +82,7 @@ class CubeInterpret:
             if len(data) != 2:
                 return True, "too few args", None
             return self.__cube.set_gpio_mode(int(data[0]), bool(data[1]))
-        
+
         elif cmd == "i2c_transfer":
             data = split[1]
             data = data.split()
