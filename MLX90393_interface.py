@@ -43,11 +43,11 @@ def init_func(cube):
 
     registers = [
         #gain 7, hallconf 0xC
-        bytearray([0x60, manufacturer_data, 0x7C, 0x00]),
+        [0x60, manufacturer_data, 0x7C, 0x00],
         #tcmp_en 1, forced i2c mode
-        bytearray([0x60, 0x64, 0x0F, 0x04]),
+        [0x60, 0x64, 0x0F, 0x04],
         #osr 1, dig_filt 7, res 1
-        bytearray([0x60, 0x02, 0xBE, 0x08])
+        [0x60, 0x02, 0xBE, 0x08]
     ]
 
     for register in registers:
