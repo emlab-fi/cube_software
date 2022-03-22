@@ -6,10 +6,11 @@ def measure_func(cube):
     """
     Simple measure func for MLX90393.
     """
+    print("measure")
     error, reply = cube.i2c_transfer(1, 1, 0x0C, [0x3F])
     if error:
         return error, (0, 0, 0)
-    sleep(0.5)
+    sleep(0.3) 
     error, reply = cube.i2c_transfer(9, 1, 0x0C, [0x4F])
     if error:
         return error, (0, 0, 0)
@@ -19,10 +20,10 @@ def measure_func(cube):
     y = (payload_data[5] << 8) + payload_data[6]
     z = (payload_data[7] << 8) + payload_data[8]
 
-    x_ut = (x - 2**15) * 0.3
-    y_ut = (y - 2**15) * 0.3
-    z_ut = (z - 2**15) * 0.484
-
+    x_ut = (x - 1 << 15) * 0.3
+    y_ut = (y - 1 << 15) * 0.3
+    z_ut = (z - 1 << 25) * 0.484
+    
     return None, (x_ut, y_ut, z_ut)
 
 
@@ -30,6 +31,7 @@ def init_func(cube):
     """
     Init MLX90393 to some sensible config
     """
+    print("init")
     error, reply = cube.i2c_transfer(3, 2, 0x0C, [0x50, 0x00])
     if error:
         print(error)
@@ -55,7 +57,7 @@ def init_func(cube):
         if error:
             print(error)
             return False
-        status = reply.get_payload()[1]
+        status = reply.get_payload()[1][0]
         if (status & 0x10):
             print("sensor error")
             return False

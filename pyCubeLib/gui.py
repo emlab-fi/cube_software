@@ -251,6 +251,7 @@ class CubeGUI:
             if not self.__init_func(self.__cube):
                 self.__log_error("sensor init failed")
                 return
+            self.__sensor_initialized = True
 
         error, value = self.__measure_func(self.__cube)
         if error:
